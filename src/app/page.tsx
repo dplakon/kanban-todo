@@ -128,102 +128,128 @@ export default function KanbanBoard() {
 
   return (
     <main className="min-h-screen bg-[#0a0a0b] p-6 font-sans">
+      {/* Skip link for keyboard users */}
+      <a href="#board" className="skip-link">
+        Skip to board
+      </a>
+
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-6">
+      <header className="max-w-7xl mx-auto mb-6">
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-5 h-5 rounded bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+          <div className="w-5 h-5 rounded bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center" aria-hidden="true">
             <span className="text-white text-xs font-bold">K</span>
           </div>
           <h1 className="text-sm font-medium text-zinc-200">Kanban Board</h1>
         </div>
-        <p className="text-xs text-zinc-500 ml-8">Active Sprint</p>
-      </div>
+        <p className="text-xs text-zinc-400 ml-8">Active Sprint</p>
+      </header>
 
       {/* Board */}
-      <div className="max-w-7xl mx-auto">
-        <div className="flex gap-4 overflow-x-auto pb-4">
+      <div id="board" className="max-w-7xl mx-auto" tabIndex={-1}>
+        <div className="flex gap-4 overflow-x-auto pb-4" role="region" aria-label="Kanban board columns">
           {columns.map((column) => (
-            <div
+            <section
               key={column.id}
               className="flex-shrink-0 w-72"
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(column.id)}
+              aria-labelledby={`column-${column.id}-heading`}
             >
-              {/* A11y issue: no semantic heading, poor structure */}
+              {/* Column header with proper semantics */}
               <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="text-zinc-500 text-sm">{column.icon}</span>
-                {/* A11y issue: using div instead of proper heading */}
-                <div className="text-sm font-medium text-zinc-300">
+                <span className="text-zinc-500 text-sm" aria-hidden="true">{column.icon}</span>
+                <h2 id={`column-${column.id}-heading`} className="text-sm font-medium text-zinc-300">
                   {column.title}
-                </div>
-                {/* A11y issue: count has no context for screen readers */}
-                <span className="text-xs text-zinc-600">
+                </h2>
+                {/* Task count with screen reader context */}
+                <span className="text-xs text-zinc-500" aria-label={`${column.tasks.length} tasks`}>
                   {column.tasks.length}
                 </span>
               </div>
 
               {/* Tasks */}
-              <div className="space-y-0.5">
+              <ul className="space-y-0.5" role="list" aria-label={`Tasks in ${column.title}`}>
                 {column.tasks.map((task) => (
-                  // A11y issue: div with click handler instead of button, no keyboard support
-                  <div
-                    key={task.id}
-                    draggable
-                    onDragStart={() => handleDragStart(task, column.id)}
-                    onClick={() => console.log("open task")}
-                    className="group bg-[#0a0a0b] border border-zinc-800/50 hover:border-zinc-700/80 
-                             rounded-md px-3 py-2.5 cursor-grab active:cursor-grabbing 
-                             transition-all duration-150 hover:bg-zinc-900/50"
-                  >
-                    <div className="flex items-start gap-2.5">
-                      {/* A11y issue: color-only indicator with no text alternative */}
-                      <div
-                        className={`w-1 h-1 rounded-full mt-1.5 flex-shrink-0 ${priorityColors[task.priority || "medium"]}`}
-                      />
-                      
-                      {/* Task content */}
-                      <div className="flex-1 min-w-0">
-                        {/* A11y issue: low contrast text (zinc-500 on dark bg) */}
-                        <p className="text-sm text-zinc-500 leading-snug">
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          {/* A11y issue: very low contrast, tiny text */}
-                          <span className="text-[9px] text-zinc-700 font-mono">
-                            KAN-{task.id}
-                          </span>
+                  <li key={task.id}>
+                    <article
+                      role="button"
+                      tabIndex={0}
+                      draggable
+                      onDragStart={() => handleDragStart(task, column.id)}
+                      onClick={() => console.log("open task")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          console.log("open task");
+                        }
+                      }}
+                      className="group bg-[#0a0a0b] border border-zinc-800/50 hover:border-zinc-700/80 
+                               rounded-md px-3 py-2.5 cursor-grab active:cursor-grabbing 
+                               transition-all duration-150 hover:bg-zinc-900/50
+                               focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50"
+                      aria-label={`${task.title}, ${task.priority || "medium"} priority`}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        {/* Priority indicator with screen reader text */}
+                        <div
+                          className={`w-1 h-1 rounded-full mt-1.5 flex-shrink-0 ${priorityColors[task.priority || "medium"]}`}
+                          aria-hidden="true"
+                        />
+                        <span className="sr-only">{task.priority || "medium"} priority</span>
+                        
+                        {/* Task content */}
+                        <div className="flex-1 min-w-0">
+                          {/* Fixed: improved contrast with text-zinc-300 */}
+                          <p className="text-sm text-zinc-300 leading-snug">
+                            {task.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {/* Fixed: improved contrast and size */}
+                            <span className="text-[11px] text-zinc-500 font-mono">
+                              KAN-{task.id}
+                            </span>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* A11y issue: removed aria-label, empty button */}
-                      <button
-                        onClick={() => deleteTask(column.id, task.id)}
-                        className="text-zinc-600 hover:text-zinc-400 opacity-0 group-hover:opacity-100 
-                                 transition-all duration-150 p-0.5 hover:bg-zinc-800 rounded"
-                      >
-                        <svg
-                          className="w-3.5 h-3.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                        {/* Delete button with accessible name */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTask(column.id, task.id);
+                          }}
+                          aria-label={`Delete task: ${task.title}`}
+                          className="text-zinc-600 hover:text-zinc-400 opacity-0 group-hover:opacity-100 
+                                   focus:opacity-100 transition-all duration-150 p-0.5 hover:bg-zinc-800 
+                                   rounded focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                          <svg
+                            className="w-3.5 h-3.5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </article>
+                  </li>
                 ))}
 
-                {/* Add task input */}
-                {/* A11y issue: input has no associated label */}
+                {/* Add task input with proper label */}
                 {showInputFor === column.id ? (
                   <div className="mt-1">
+                    <label htmlFor={`new-task-${column.id}`} className="sr-only">
+                      New task title for {column.title}
+                    </label>
                     <input
+                      id={`new-task-${column.id}`}
                       type="text"
                       autoFocus
                       placeholder="Issue title"
@@ -244,25 +270,38 @@ export default function KanbanBoard() {
                         }
                       }}
                       className="w-full bg-zinc-900/50 border border-zinc-700 text-zinc-200 
-                               text-sm placeholder-zinc-600 rounded-md px-3 py-2 
-                               focus:outline-none focus:border-violet-500/50 focus:ring-1 
+                               text-sm placeholder-zinc-500 rounded-md px-3 py-2 
+                               focus:outline-none focus:border-violet-500/50 focus:ring-2 
                                focus:ring-violet-500/20 transition-all"
                     />
                   </div>
                 ) : (
-                  // A11y issue: using span with onClick instead of button
-                  <span
+                  <button
+                    type="button"
                     onClick={() => setShowInputFor(column.id)}
-                    className="w-full mt-1 flex items-center gap-2 px-3 py-2 text-sm text-zinc-600 
-                             hover:text-zinc-400 hover:bg-zinc-900/30 rounded-md transition-colors cursor-pointer"
+                    className="w-full mt-1 flex items-center gap-2 px-3 py-2 text-sm text-zinc-500 
+                             hover:text-zinc-300 hover:bg-zinc-900/30 rounded-md transition-colors
+                             focus:outline-none focus:ring-2 focus:ring-violet-500/50"
                   >
-                    {/* A11y issue: decorative image without aria-hidden */}
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2752525b' stroke-width='1.5'%3E%3Cpath d='M12 4v16m8-8H4'/%3E%3C/svg%3E" alt="" />
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
                     Add issue
-                  </span>
+                  </button>
                 )}
-              </div>
-            </div>
+              </ul>
+            </section>
           ))}
         </div>
       </div>
